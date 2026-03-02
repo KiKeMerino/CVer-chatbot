@@ -1,0 +1,1 @@
+# Configuración (modelos, paths, etc.)

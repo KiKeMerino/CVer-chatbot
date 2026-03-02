@@ -1,0 +1,1 @@
+# Lógica de chunking: dividir el texto en partes manejables para el modelo

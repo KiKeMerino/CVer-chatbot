@@ -1,0 +1,1 @@
+# Wrapper del modelo de embeddings

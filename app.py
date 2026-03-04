@@ -4,6 +4,11 @@ from src.embeddings import generate_embeddings
 from src.retriever import retrieve
 from src.prompt_builder import build_prompt
 from src.llm import generate_answer
+from src.vector_store import collection
+from offline import index_cv   # función que tengas en offline.py
+
+if collection.count() == 0:
+    index_cv()
 
 st.title("CVer - Chat")
 

@@ -32,7 +32,7 @@ if question:
 
     # 2 Retrieve relevant chunks
     context_chunks, _ = retrieve(query_embedding)
-
+    print(context_chunks)
     # 3 Build prompt
     prompt = build_prompt(context_chunks, question)
 

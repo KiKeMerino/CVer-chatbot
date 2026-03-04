@@ -8,5 +8,6 @@ def retrieve(query_embedding, top_k=3):
         query_embeddings=[query_embedding],
         n_results=top_k
     )
+    print(results)
     
     return results['documents'][0], results['metadatas'][0]

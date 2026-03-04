@@ -7,8 +7,12 @@ from src.llm import generate_answer
 from src.vector_store import collection
 from offline import index_cv   # función que tengas en offline.py
 
-if collection.count() == 0:
-    index_cv()
+@st.cache_resource
+def init_db():
+    if collection.count() == 0:
+        index_cv()
+
+init_db()
 
 st.title("CVer - Chat")
 

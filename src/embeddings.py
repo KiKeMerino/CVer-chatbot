@@ -13,4 +13,5 @@ def generate_embeddings(texts: List[str]) -> List[List[float]]:
         input=texts,
         model="text-embedding-3-large"
     )
+
     return [item.embedding for item in response.data]

@@ -311,11 +311,6 @@ if mode == "Chat":
 
     st.title("CVer - Soy Enrique, preguntame lo que quieras sobre mi")
 
-    import os
-    st.write("¿Existe knowledge.md?", os.path.exists("data/knowledge.md"))
-    st.write("Working directory:", os.getcwd())
-    st.write("Archivos en data/:", os.listdir("data") if os.path.exists("data") else "NO EXISTE data/")
-
     for role, content in st.session_state.messages:
         with st.chat_message("user" if role == "User" else "assistant"):
             st.markdown(content)

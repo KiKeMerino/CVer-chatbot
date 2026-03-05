@@ -20,3 +20,10 @@ I dont have preference
 
 ### What is your strongest technical skill?
 Python and I learn fast
+
+# Información adicional
+
+## Expectativas salariales
+- Rango de expectativas salariales: 28.000€ a 34.000€ brutos anuales en España.
+
+   

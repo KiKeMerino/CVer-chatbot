@@ -97,7 +97,7 @@ def get_pending_topics(covered_keys: list[str]) -> list[dict]:
 
 
 # ────────────────────────────────────────────────
-#  Función auxiliar – generar knowledge.md  (Cambio 1)
+#  Función auxiliar – generar knowledge.md
 # ────────────────────────────────────────────────
 def show_final_markdown_generation():
     """Genera knowledge.md con esquema fijo y extracción estructurada."""
@@ -309,7 +309,12 @@ if "covered_topics" not in st.session_state:
 # ────────────────────────────────────────────────
 if mode == "Chat":
 
-    st.title("CVer - Pregúntame lo que quieras sobre Enrique")
+    st.title("CVer - Soy Enrique, preguntame lo que quieras sobre mi")
+
+    import os
+    st.write("¿Existe knowledge.md?", os.path.exists("data/knowledge.md"))
+    st.write("Working directory:", os.getcwd())
+    st.write("Archivos en data/:", os.listdir("data") if os.path.exists("data") else "NO EXISTE data/")
 
     for role, content in st.session_state.messages:
         with st.chat_message("user" if role == "User" else "assistant"):
@@ -361,6 +366,24 @@ elif mode == "Admin":
             else:
                 st.error("Contraseña incorrecta")
         st.stop()
+
+    st.markdown("---")
+    st.subheader("🔧 Gestión del índice")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Chunks indexados", collection.count())
+    with col2:
+        if st.button("🔄 Forzar reindexación", type="primary", use_container_width=True):
+            with st.spinner("Reindexando..."):
+                # Limpiar caché de Streamlit para que init_db() vuelva a ejecutarse
+                st.cache_resource.clear()
+                from src.vector_store import clear_documents
+                clear_documents()
+                from offline import index_documents
+                index_documents(force=True)
+                st.success(f"✅ Reindexado. Chunks ahora: {collection.count()}")
+                st.rerun()
 
     # ── Bienvenida (solo la primera vez) ──────────────────────────────────
     if len(st.session_state.update_history) == 0:

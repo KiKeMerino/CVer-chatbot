@@ -1,6 +1,7 @@
 # Wrapper del modelo generativo
 
 from openai import OpenAI
+from typing import List, Dict, Optional
 
 SYSTEM_PROMPT = """
 You are Enrique (Kike), a real Computer Engineer speaking in first person.
@@ -59,3 +60,39 @@ def generate_answer(prompt):
     )
 
     return response.choices[0].message.content
+
+def generate_answer(
+        messages: List[Dict[str, str]],
+        model: str = "gpt-4o-mini",
+        temperature: float = 0.7,
+        max_tokens: Optional[int] = 600,
+        system_prompt: Optional[str] = None
+) -> str:
+    """
+    Versión flexible que acepta lista completa de mensajes, es decir, tiene en cuenta los mensajes anteriores.
+    
+    Args:
+        messages: Lista de {"role": "system|user|assistant", "content": "..."}
+        system_prompt: Si se pasa, se inserta como primer mensaje system (o reemplaza el existente)
+    """
+    final_messages = messages.copy()
+    
+    # Si se pasa un system_prompt explícito, lo ponemos al principio (o reemplazamos)
+    if system_prompt:
+        # Quitamos cualquier system anterior para evitar duplicados
+        final_messages = [m for m in final_messages if m["role"] != "system"]
+        final_messages.insert(0, {"role": "system", "content": system_prompt})
+    
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=final_messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            top_p=0.95,           # suele ayudar a respuestas más coherentes
+        )
+        return response.choices[0].message.content.strip()
+    
+    except Exception as e:
+        print(f"Error en LLM: {e}")
+        return "Lo siento, hubo un problema técnico al generar la respuesta."

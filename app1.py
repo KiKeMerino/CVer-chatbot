@@ -1,0 +1,323 @@
+import streamlit as st
+
+from src.embeddings import generate_embeddings
+from src.retriever import retrieve
+from src.prompt_builder import build_prompt
+from src.llm import SYSTEM_PROMPT, generate_answer
+from src.vector_store import collection
+from offline import index_documents
+
+
+# ────────────────────────────────────────────────
+#  Función auxiliar – generar personal_info.md
+# ────────────────────────────────────────────────
+def show_final_markdown_generation():
+    """Muestra el contenido generado para personal_info.md y ofrece opciones al usuario."""
+    st.subheader("📄 Contenido sugerido para personal_info.md")
+    st.caption("Revisa, edita si quieres y luego actualiza el archivo en tu repositorio → commit → redeploy")
+
+    # 1. Intentamos leer el contenido anterior
+    old_content = ""
+    try:
+        with open("personal_info.md", "r", encoding="utf-8") as f:
+            old_content = f.read().strip()
+        if old_content:
+            st.info("Se detectó un personal_info.md existente. El nuevo contenido lo fusionará con lo anterior.")
+        else:
+            st.info("El archivo personal_info.md está vacío o recién creado.")
+    except FileNotFoundError:
+        st.info("No se encontró personal_info.md → se creará uno nuevo.")
+    except Exception as e:
+        st.warning(f"No se pudo leer el archivo anterior: {e}")
+        old_content = ""
+
+    # 2. Preparamos el contexto para el LLM
+    conversation_text = "\n".join(
+        f"**{role.upper()}**: {content}" 
+        for role, content in st.session_state.update_history
+    )
+
+    prompt = f"""Eres un asistente que organiza información personal y profesional en formato Markdown limpio.
+
+Tarea:
+Crea o actualiza el archivo personal_info.md combinando:
+A) El contenido ANTERIOR (si existe)
+B) Toda la nueva información extraída de esta conversación
+
+Reglas importantes:
+- Mantén y respeta toda la información anterior si no se contradice
+- Actualiza o añade solo lo que se haya mencionado explícitamente en la conversación
+- Usa un formato claro, profesional y consistente:
+  - Título principal: # Información Personal y Preferencias
+  - Secciones con ## (ej: ## Expectativas salariales, ## Modelo de trabajo, etc.)
+  - Viñetas (-) o listas numeradas cuando corresponda
+  - Frases cortas y directas
+  - No inventes datos ni añadas suposiciones
+- Si no hay nada nuevo relevante → conserva el contenido anterior tal cual
+- Responde **SOLO** con el contenido del archivo Markdown. Sin introducciones, sin explicaciones, sin ```markdown
+
+Contenido anterior:
+{old_content if old_content else "(No existe contenido anterior)"}
+
+Conversación completa:
+{conversation_text}
+
+Genera el archivo Markdown completo ahora.
+"""
+
+    # 3. Generamos el nuevo contenido
+    with st.spinner("Generando el archivo actualizado..."):
+        try:
+            new_md_content = generate_answer(prompt)  # ← usa tu función actual o la mejorada
+            new_md_content = new_md_content.strip()
+
+            if not new_md_content.startswith("#"):
+                new_md_content = "# Información Personal y Preferencias\n\n" + new_md_content
+
+            # 4. Mostramos el resultado
+            st.code(new_md_content, language="markdown", line_numbers=True)
+
+            # Botones de acción
+            col1, col2, col3 = st.columns([2, 2, 1])
+
+            with col1:
+                st.download_button(
+                    label="⬇️ Descargar personal_info.md",
+                    data=new_md_content,
+                    file_name="personal_info.md",
+                    mime="text/markdown",
+                    use_container_width=True
+                )
+
+            with col2:
+                if st.button("Copiar al portapapeles", use_container_width=True):
+                    st.session_state.copied_content = new_md_content
+                    st.success("¡Contenido copiado al portapapeles!", icon="✅")
+                    # Nota: Streamlit no tiene API nativa de copiar, pero puedes mostrar instrucción
+                    st.caption("Ctrl+C / Cmd+C para copiar desde el bloque de código arriba")
+
+            with col3:
+                if st.button("Resetear entrevista", type="secondary"):
+                    st.session_state.update_history = []
+                    st.session_state.questions_asked = 0
+                    st.session_state.owner_authenticated = True  # mantener autenticado
+                    st.success("Entrevista reiniciada. Puedes volver a empezar.")
+                    st.rerun()
+
+            st.markdown("---")
+            st.markdown(
+                "**Siguientes pasos recomendados:**\n"
+                "1. Revisa el contenido generado\n"
+                "2. Haz los cambios que consideres necesarios\n"
+                "3. Copia todo el bloque de código\n"
+                "4. Pégalo en `personal_info.md` (sobrescribe o fusiona)\n"
+                "5. Commit & push → Streamlit redeployará automáticamente\n"
+            )
+
+        except Exception as e:
+            st.error(f"Error al generar el contenido: {str(e)}")
+            st.info("Puedes copiar manualmente el historial de la conversación y editarlo tú mismo si lo prefieres.")
+
+# ────────────────────────────────────────────────
+#  Configuración inicial
+# ────────────────────────────────────────────────
+st.set_page_config(page_title="CVer - Enrique", page_icon=":robot_face:", layout="wide")
+
+@st.cache_resource
+def init_db():
+    if collection.count() == 0:
+        index_documents()
+
+
+ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "temporal1234")
+
+# ────────────────────────────────────────────────
+#  Selección de modo
+# ────────────────────────────────────────────────
+mode = st.sidebar.radio("Selecciona modo", ["Chat", "Admin"], index=0)
+
+
+# ────────────────────────────────────────────────
+#  Estado global
+# ────────────────────────────────────────────────
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+if "question_count" not in st.session_state:
+    st.session_state.question_count = 0
+
+if "update_history" not in st.session_state:
+    st.session_state.update_history = []
+
+if "question_asked" not in st.session_state:
+    st.session_state.question_asked = 0
+
+
+# ────────────────────────────────────────────────
+#  MODO CHAT RECRUITERS
+# ────────────────────────────────────────────────
+if mode == "Chat":
+
+    st.title("CVer - Preguntame lo que quieras sobre Enrique")
+
+    # Mostrar historial de conversación
+    for role, content in st.session_state.messages:
+        with st.chat_message("user" if role == "User" else "assistant"):
+            st.markdown(content)
+
+    #  Poner limite de preguntas por sesión
+    if "question_count" not in st.session_state:
+        st.session_state.question_count = 0
+
+    # Limite de preguntas por sesión
+    if st.session_state.question_count >= 12:
+        st.warning("Has alcanzado el límite de preguntas por sesión. Por favor, recarga la página para continuar.")
+        
+    else:
+        if question:= st.chat_input("Escribe tu pregunta aquí..."):
+            st.session_state.question_count += 1
+
+            with st.chat_message("user"):
+                st.markdown(question)
+            st.session_state.messages.append(("User", question))
+
+
+            # RAG Pipeline
+
+            # 1 Generate embedding of the query
+            query_embedding = generate_embeddings([question])[0]
+
+            # 2 Retrieve relevant chunks
+            context_chunks, _ = retrieve(query_embedding)
+
+            # 3 Build prompt
+            prompt = build_prompt(context_chunks, question)
+
+            # 4 Generate answer
+            messages = [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt}
+            ]
+            answer = generate_answer(messages)
+
+            with st.chat_message("assistant"):
+                st.markdown(answer)
+            st.session_state.messages.append(("CVer", answer))
+
+
+# ────────────────────────────────────────────────
+#  MODO OWNER – Entrevista para ampliar conocimiento
+# ────────────────────────────────────────────────
+elif mode == "Admin":
+
+    st.title("Admin Panel - Entrena a CVer con más conocimiento")
+
+    # Autenticación simple
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+    
+    if not st.session_state.authenticated:
+        pw = st.text_input("Enter admin password:", type="password")
+        if st.button("Login"):
+            if pw == ADMIN_PASSWORD:
+                st.session_state.authenticated = True
+                st.rerun()
+                # st.success("Authenticated successfully!")
+            else:
+                st.error("Contraseña incorrecta")
+        st.stop()
+
+# Entrevista
+# ── Mensaje de bienvenida e inicio automático ─────────────────────────────
+    if len(st.session_state.update_history) == 0:
+        # Solo la primera vez (o después de reset)
+        first_message = (
+            "¡Hola! Soy CVer en modo actualización.\n\n"
+            "Voy a hacerte una serie de preguntas para conocer mejor tus preferencias, "
+            "expectativas y detalles que no están en el CV.\n"
+            "Responde con naturalidad. Cuando quieras terminar escribe: **terminar**\n\n"
+            "Empecemos..."
+        )
+        
+        st.session_state.update_history.append(("assistant", first_message))
+        # st.rerun()
+        
+    # Mostrar hiostiral de actualización
+    for role, content in st.session_state.update_history:
+        with st.chat_message("user" if role == "User" else "assistant"):
+            st.markdown(content)
+
+    # ──────────────────────────────────────────────────────────────
+    # Botón solo visible si todavía no hemos hecho ninguna pregunta real
+    # ──────────────────────────────────────────────────────────────
+    preguntas_asistente = [msg[1] for msg in st.session_state.update_history if msg[0] == "assistant"]
+
+    if len(preguntas_asistente) <= 1:  # solo bienvenida → mostramos botón
+        if st.button("Empezar - Hazme la primera pregunta", type="primary", use_container_width=True):
+            with st.spinner("Preparando primera pregunta..."):
+                system_prompt_entrevistador = """Eres un entrevistador profesional y empático.
+                Haz SOLO UNA pregunta inicial inteligente y natural para ampliar el perfil de una persona.
+                Elige entre estos temas (elige uno diferente cada vez que sea posible):
+                - expectativas salariales actuales
+                - preferencia de modelo de trabajo (remoto / híbrido / presencial)
+                - disponibilidad para viajar o reubicación
+                - rango de edad aproximado (si se siente cómodo compartiendo)
+                - principales valores o cultura empresarial deseada
+                - fortalezas o habilidades blandas no visibles en el CV
+                - motivación principal para buscar nuevo rol
+                - preferencias de tamaño de empresa o sector
+
+                Formula la pregunta de forma cálida y profesional.
+                NO hagas más de una pregunta. NO añadas introducciones largas.
+                Responde SOLO con la pregunta (sin numerarla ni poner "Pregunta 1:")."""
+
+                # Generamos la pregunta con el LLM
+                primera_pregunta = generate_answer(
+                    messages=[{"role": "system", "content": system_prompt_entrevistador}],
+                    temperature=0.75,
+                    max_tokens=180,
+                    system_prompt=None
+                )
+
+                st.session_state.update_history.append(("assistant", primera_pregunta))
+                st.session_state.questions_asked = 1
+                st.rerun()
+
+
+
+    if prompt := st.chat_input("Tu respuesta..."):
+        st.session_state.update_history.append(("user", prompt))
+
+        # Prompt para que el LLM actúe  como entrevistador
+        system_prompt_entrevistador = f"""Eres un entrevistador profesional que me ayuda a completar mi perfil y que conoce perfectamente todo lo que ya me has preguntado.
+        Historial completo de preguntas ya hechas:
+        {[msg[1] for msg in st.session_state.update_history if msg[0] == "assistant"]}
+        Ya has hecho {st.session_state.questions_asked} preguntas.
+        Haz SIEMPRE solo UNA pregunta nueva relevante.
+        Temas interesantes: edad, expectativas salariales, modelo de trabajo preferido (remoto/híbrido), disponibilidad para viajar, pretensiones de sueldo, valores, fortalezas no visibles en CV, hobbies relevantes para el trabajo, preferencias de equipo, razones para cambiar de trabajo, etc.
+        No repitas temas ya preguntados.
+        Si el usuario dice "terminar" o similar → responde SOLO con la palabra FINALIZAR (en mayúsculas)."""
+        
+        # Llamada al LLM
+        # full_history = [{"role": "system", "content": system_prompt}]
+        conversation_messages = [{"role": "system", "content": system_prompt_entrevistador}]
+
+        for role, content in st.session_state.update_history:
+            conversation_messages.append({"role": role, "content": content})
+
+        # response = generate_answer(full_history)   # si tu función acepta lista de dicts
+        response = generate_answer(
+            messages=conversation_messages,
+            temperature=0.75,
+            max_tokens=180,
+            system_prompt=None
+        )
+
+        st.session_state.update_history.append(("assistant", response))
+        st.session_state.questions_asked += 1
+
+        if "FINALIZAR" in response.upper():
+            show_final_markdown_generation()
+            
+        st.rerun()
+

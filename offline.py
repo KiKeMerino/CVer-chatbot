@@ -1,4 +1,4 @@
-from src.chunking import load_and_chunk_documents
+from src.chunking1 import load_and_chunk_documents
 from src.embeddings import generate_embeddings
 from src.vector_store import add_documents
 from src.vector_store import collection

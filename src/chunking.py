@@ -5,6 +5,7 @@ with open('data/cv.md', 'r', encoding='utf-8') as file:
 
 
 def chunk_text(content: str):
+
     chunks = []
     current_section = None
     current_subsection = None
@@ -56,5 +57,38 @@ def chunk_text(content: str):
     # Guardar último chunk si tiene contenido
     if current_chunk and current_chunk["text"].strip():
         chunks.append(current_chunk)
+
+    return chunks
+
+def load_and_chunk_documents():
+    chunks = []
+
+    # CV
+    with open("data/cv.md", "r", encoding="utf-8") as file:
+        text = file.read()
+
+    cv_chunks = chunk_text(text)
+
+    for chunk in cv_chunks:
+        chunks.append({
+            "text": chunk["text"],
+            "metadata": {
+                "source": "CV"
+            }
+        })
+
+    # Personal Info
+    with open("data/knowledge.md", "r", encoding="utf-8") as file:
+        text = file.read()
+
+    personal_chunks = chunk_text(text)
+
+    for chunk in personal_chunks:
+        chunks.append({
+            "text": chunk["text"],
+            "metadata": {
+                "source": "Personal Info"
+            }
+        })
 
     return chunks

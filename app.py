@@ -16,7 +16,7 @@ init_db()
 
 st.title("CVer - Chat")
 
-question = st.chat_input("Preguntame algo sobre Kike")
+question = st.chat_input("Soy el asistente de Kike")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -41,7 +41,7 @@ if question:
 
     # 2 Retrieve relevant chunks
     context_chunks, _ = retrieve(query_embedding)
-    print(context_chunks)
+
     # 3 Build prompt
     prompt = build_prompt(context_chunks, question)
 

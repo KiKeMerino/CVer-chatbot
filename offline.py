@@ -15,7 +15,7 @@ def index_cv():
 
     # Obtener chunks del texto
     chunks = chunk_text(content)
-    
+
     texts = [chunk['text'] for chunk in chunks]
 
     # Obtener embeddings
@@ -23,3 +23,37 @@ def index_cv():
 
     # Guardar en vector store
     add_documents(chunks, vectors)
+
+    # Script para entrenar al modelo con más conocimiento
+
+
+def wider_knowledge(questions):
+
+    for q in questions:
+        answer = input(q + "\n")
+
+        with open("data/knowledge.md", "a", encoding="utf-8") as f:
+            f.write(f"\n### {q}\n")
+            f.write(f"{answer}\n")
+
+        chunk = {
+            "text": f"{q}: {answer}",
+            "metadata": {
+                "section": "personal_info"
+            }
+        }
+
+        embedding = generate_embeddings([chunk["text"]])
+
+        add_documents([chunk], embedding)
+
+
+TRAINING_QUESTIONS = [
+    "Where do you live?",
+    "Are you open to relocation?",
+    "Do you prefer remote or onsite work?",
+    "What type of companies interest you most?",
+    "What is your strongest technical skill?"
+]
+
+# wider_knowledge(TRAINING_QUESTIONS)

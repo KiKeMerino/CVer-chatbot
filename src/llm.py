@@ -50,16 +50,16 @@ Responde únicamente con lo que diría Enrique en una conversación real.
 
 client = OpenAI()
 
-def generate_answer(prompt):
-    response = client.chat.completions.create(
-        model = "gpt-4o-mini",
-        messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": prompt}
-        ]
-    )
+# def generate_answer(prompt):
+#     response = client.chat.completions.create(
+#         model = "gpt-4o-mini",
+#         messages = [
+#             {"role": "system", "content": SYSTEM_PROMPT},
+#             {"role": "user", "content": prompt}
+#         ]
+#     )
 
-    return response.choices[0].message.content
+#     return response.choices[0].message.content
 
 def generate_answer(
         messages: List[Dict[str, str]],

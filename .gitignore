@@ -2,3 +2,4 @@ genai/
 .env
 __pycache__/
 .index_hash
+.streamlit/

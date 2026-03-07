@@ -4,6 +4,10 @@
 - **Edad:** 27
 - **Idiomas:** Inglés (C1)
 
+## Contacto
+- **Correo:** enri1998@hotmail.com
+- **LinkedIn:** https://www.linkedin.com/in/kikemerino/
+
 ## Expectativas económicas
 - **Salario bruto anual esperado:** 28.000 – 34.000 €
 - **Tipo de contrato preferido:** No especificado
@@ -69,8 +73,9 @@ No hay nada relevante mencionado.
 - Proyectos prácticos en curso: desarrollo de chatbots y aplicaciones con LLMs y RAG.
 
 ## Herramientas y hábitos que más valoro
-- **Git**: versionado constante, commits descriptivos, rama por cada nueva funcionalidad.  
+- **Git**: versionado de los cambios, commits descriptivos, rama por cada nueva funcionalidad.  
   Beneficio clave: avanzar incrementalmente sin miedo, poder volver atrás si algo sale mal y evitar líos grandes.
+- **Feedback constante:** tener feedback de los compañeros y superiores para ir encaminando tu trabajo sin que haya malentendidos por falta de comunicación
 
 ## Proyecto actual que más me motiva
 Este mismo **chatbot personal** que estoy construyendo (CVer).  

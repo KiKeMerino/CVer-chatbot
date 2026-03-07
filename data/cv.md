@@ -61,6 +61,7 @@ Proyecto end-to-end de Data Science para predicción de propensión y segmentaci
 - Resultado: AUC-ROC de 0.93 y mejora de ROI superior al 20x.
 - Tecnologías utilizadas: Python, Scikit-learn, XGBoost.
 - Es uno de los proyectos del que más orgulloso estoy por el impacto directo en negocio.
+- Publicado en SSRN (Social Science Research Network), paper: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5917281
 - Repositorio: https://github.com/KiKeMerino/EasyMoney
 
 ### SierraCC – Predicción de cobertura de nieve con LSTM

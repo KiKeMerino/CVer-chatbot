@@ -1,6 +1,7 @@
 import streamlit as st
 
 from styles import MODERN_CSS
+from tracker import log_visit, log_question, get_stats
 from src.embeddings import generate_embeddings
 from src.retriever import retrieve
 from src.prompt_builder import build_prompt
@@ -33,6 +34,23 @@ st.set_page_config(
 
 # Inject CSS
 st.markdown(MODERN_CSS, unsafe_allow_html=True)
+
+
+# ── Google Analytics ──────────────────────────
+GA_ID = st.secrets.get("analytics", {}).get("ga_measurement_id", "")
+if GA_ID:
+    st.markdown(f"""
+    <script async src="https://www.googletagmanager.com/gtag/js?id={GA_ID}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){{dataLayer.push(arguments);}}
+        gtag('js', new Date());
+        gtag('config', '{GA_ID}');
+    </script>
+    """, unsafe_allow_html=True)
+
+# ── Registrar visita (una vez por sesión) ─────
+log_visit()
 
 # Init DB
 @st.cache_resource
@@ -163,6 +181,7 @@ if mode == "Chat":
             with st.chat_message("assistant"):
                 st.markdown(answer)
             st.session_state.messages.append(("assistant", answer))
+            log_question(question)
             st.rerun()
 
 
@@ -205,3 +224,29 @@ elif mode == "Admin":
                 st.rerun()
 
     st.markdown("---")
+    # ── Estadísticas ──────────────────────────────────────────────────────
+    st.subheader("📊 Estadísticas de uso")
+
+    with st.spinner("Cargando datos..."):
+        stats = get_stats()
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Visitas totales", stats["total_visits"])
+    with col2:
+        st.metric("Preguntas totales", stats["total_questions"])
+
+    if stats["top_questions"]:
+        st.markdown("---")
+        st.markdown("**🔝 Preguntas más frecuentes**")
+        for q, count in stats["top_questions"]:
+            st.markdown(f"- `{count}x` &nbsp; {q}", unsafe_allow_html=True)
+
+    if stats["recent_questions"]:
+        st.markdown("---")
+        st.markdown("**🕐 Últimas preguntas**")
+        for ts, q in stats["recent_questions"]:
+            st.markdown(
+                f"<div style='margin-bottom:0.4rem'><span style='color:#3d4460;font-size:0.78rem'>{ts}</span><br>{q}</div>",
+                unsafe_allow_html=True
+            )

@@ -230,10 +230,12 @@ elif mode == "Admin":
     with st.spinner("Cargando datos..."):
         stats = get_stats()
 
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Visitas totales", stats["total_visits"])
     with col2:
+        st.metric("Visitantes únicos", stats["unique_visitors"])
+    with col3:
         st.metric("Preguntas totales", stats["total_questions"])
 
     if stats["top_questions"]:
@@ -245,8 +247,11 @@ elif mode == "Admin":
     if stats["recent_questions"]:
         st.markdown("---")
         st.markdown("**🕐 Últimas preguntas**")
-        for ts, q in stats["recent_questions"]:
+        for ts, visitor_id, q in stats["recent_questions"]:
             st.markdown(
-                f"<div style='margin-bottom:0.4rem'><span style='color:#3d4460;font-size:0.78rem'>{ts}</span><br>{q}</div>",
+                f"<div style='margin-bottom:0.6rem'>"
+                f"<span style='color:#3d4460;font-size:0.75rem'>{ts} &nbsp;·&nbsp; "
+                f"<code style='font-size:0.72rem'>#{visitor_id}</code></span><br>{q}"
+                f"</div>",
                 unsafe_allow_html=True
             )

@@ -1,7 +1,14 @@
 """
 tracker.py — Registro de visitas y preguntas en Google Sheets
 
-Configuración necesaria en st.secrets (secrets.toml):
+Columnas en la Sheet:
+  - visitas:   timestamp | session_id | visitor_id | ip | user_agent
+  - preguntas: timestamp | session_id | visitor_id | pregunta
+
+visitor_id: hash MD5 de IP + User-Agent. Identifica al mismo navegador/dispositivo
+entre sesiones distintas, sin almacenar datos personales directamente.
+
+Configuración en st.secrets (secrets.toml):
 
 [gsheets]
 spreadsheet_id = "tu_spreadsheet_id_aquí"
@@ -16,17 +23,15 @@ client_id = "..."
 auth_uri = "https://accounts.google.com/o/oauth2/auth"
 token_uri = "https://oauth2.googleapis.com/token"
 
-Pasos para configurarlo:
-1. Ir a console.cloud.google.com → crear proyecto → activar Google Sheets API
-2. Crear Service Account → descargar JSON de credenciales
-3. Pegar los campos del JSON en st.secrets bajo [gcp_service_account]
-4. Crear una Google Sheet con dos pestañas: "visitas" y "preguntas"
-5. Compartir la Sheet con el email del Service Account (editor)
-6. Copiar el ID de la URL de la Sheet en spreadsheet_id
+[analytics]
+ga_measurement_id = "G-XXXXXXXXXX"  # opcional
 """
 
+import hashlib
 import streamlit as st
 from datetime import datetime, timezone
+from collections import Counter
+
 import gspread
 from google.oauth2.service_account import Credentials
 
@@ -35,6 +40,35 @@ SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive",
 ]
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _get_visitor_info() -> tuple:
+    """
+    Extrae IP y User-Agent de los headers de Streamlit.
+    Devuelve (visitor_id, ip, user_agent).
+
+    visitor_id es un hash MD5 de IP+UA — permite reconocer al mismo
+    usuario entre sesiones sin guardar datos personales directamente.
+    """
+    try:
+        headers = st.context.headers
+        # Streamlit Cloud pone la IP real en X-Forwarded-For
+        ip = headers.get("X-Forwarded-For", headers.get("Remote-Addr", "unknown"))
+        ip = ip.split(",")[0].strip()  # primera IP si hay proxies encadenados
+        ua = headers.get("User-Agent", "unknown")
+        visitor_id = hashlib.md5(f"{ip}|{ua}".encode()).hexdigest()[:12]
+        return visitor_id, ip, ua
+    except Exception:
+        return "unknown", "unknown", "unknown"
+
+
+def _get_session_id() -> str:
+    try:
+        return st.runtime.scriptrunner.get_script_run_ctx().session_id
+    except Exception:
+        return "unknown"
 
 
 @st.cache_resource
@@ -52,65 +86,74 @@ def _get_client():
 
 
 def _get_sheet(tab_name: str):
-    """Devuelve la pestaña indicada de la spreadsheet."""
     client = _get_client()
     if client is None:
         return None
     try:
         spreadsheet_id = st.secrets["gsheets"]["spreadsheet_id"]
-        sheet = client.open_by_key(spreadsheet_id)
-        return sheet.worksheet(tab_name)
+        return client.open_by_key(spreadsheet_id).worksheet(tab_name)
     except Exception as e:
-        print(f"[tracker] Error accediendo a pestaña '{tab_name}': {e}")
+        print(f"[tracker] Error accediendo a '{tab_name}': {e}")
         return None
 
 
+def _now() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+
+# ── Public API ────────────────────────────────────────────────────────────────
+
 def log_visit():
     """
-    Registra una visita nueva en la pestaña 'visitas'.
-    Se llama una vez por sesión usando session_state.
-    Columnas: timestamp | session_id
+    Registra una visita en la pestaña 'visitas'. Una vez por sesión.
+    Columnas: timestamp | session_id | visitor_id | ip | user_agent
     """
     if st.session_state.get("visit_logged"):
         return
 
     ws = _get_sheet("visitas")
     if ws is None:
+        st.session_state.visit_logged = True
         return
 
     try:
-        now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-        session_id = st.runtime.scriptrunner.get_script_run_ctx().session_id
-        ws.append_row([now, session_id], value_input_option="USER_ENTERED")
-        st.session_state.visit_logged = True
+        visitor_id, ip, ua = _get_visitor_info()
+        ws.append_row(
+            [_now(), _get_session_id(), visitor_id, ip, ua],
+            value_input_option="USER_ENTERED"
+        )
     except Exception as e:
         print(f"[tracker] Error registrando visita: {e}")
+    finally:
+        st.session_state.visit_logged = True
 
 
 def log_question(question: str):
     """
     Registra una pregunta en la pestaña 'preguntas'.
-    Columnas: timestamp | session_id | pregunta
+    Columnas: timestamp | session_id | visitor_id | pregunta
     """
     ws = _get_sheet("preguntas")
     if ws is None:
         return
 
     try:
-        now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-        session_id = st.runtime.scriptrunner.get_script_run_ctx().session_id
-        ws.append_row([now, session_id, question], value_input_option="USER_ENTERED")
+        visitor_id, _, _ = _get_visitor_info()
+        ws.append_row(
+            [_now(), _get_session_id(), visitor_id, question],
+            value_input_option="USER_ENTERED"
+        )
     except Exception as e:
         print(f"[tracker] Error registrando pregunta: {e}")
 
 
 def get_stats() -> dict:
     """
-    Devuelve estadísticas básicas para el panel Admin.
-    Retorna dict con: total_visits, total_questions, top_questions
+    Devuelve estadísticas para el panel Admin.
     """
     stats = {
         "total_visits": "—",
+        "unique_visitors": "—",
         "total_questions": "—",
         "top_questions": [],
         "recent_questions": [],
@@ -121,23 +164,27 @@ def get_stats() -> dict:
         ws_questions = _get_sheet("preguntas")
 
         if ws_visits:
-            visits = ws_visits.get_all_values()
-            stats["total_visits"] = max(0, len(visits) - 1)  # -1 por cabecera
+            rows = ws_visits.get_all_values()
+            data = rows[1:] if len(rows) > 1 else []
+            stats["total_visits"] = len(data)
+            # visitor_id está en columna índice 2
+            unique = set(r[2] for r in data if len(r) > 2 and r[2] != "unknown")
+            stats["unique_visitors"] = len(unique)
 
         if ws_questions:
             rows = ws_questions.get_all_values()
-            data_rows = rows[1:] if len(rows) > 1 else []  # skip header
-            stats["total_questions"] = len(data_rows)
+            data = rows[1:] if len(rows) > 1 else []
+            stats["total_questions"] = len(data)
 
-            # Top 5 preguntas más frecuentes
-            from collections import Counter
-            questions_list = [r[2] for r in data_rows if len(r) > 2]
-            top = Counter(questions_list).most_common(5)
-            stats["top_questions"] = top
+            # Top 5 preguntas (columna índice 3)
+            questions_list = [r[3] for r in data if len(r) > 3]
+            stats["top_questions"] = Counter(questions_list).most_common(5)
 
-            # Últimas 10 preguntas
+            # Últimas 10: (timestamp, visitor_id, pregunta)
             stats["recent_questions"] = [
-                (r[0], r[2]) for r in reversed(data_rows[-10:]) if len(r) > 2
+                (r[0], r[2], r[3])
+                for r in reversed(data[-10:])
+                if len(r) > 3
             ]
 
     except Exception as e:

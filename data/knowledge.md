@@ -87,7 +87,7 @@ Ojalá poder trabajar profesionalmente en algo similar (aplicaciones con LLMs, i
 Durante la universidad, trabajando como investigador: proyecto completo de **deep learning** en solitario.  
 - Problema: predecir la **capa de nieve futura** en diferentes cuencas hidrográficas del mundo bajo varios escenarios climáticos.  
 - Enfoque: red neuronal **autorregresiva con variables exógenas**.  
-- Resultado: tendencia clara a **menos nieve** en el futuro → publicado próximamente en revista científica.  
+- Resultado: tendencia clara a **menos nieve** en el futuro → publicado en revista científica (SSRN).  
 - Lección principal: al principio todo parece abrumador (especialmente solo), pero con **constancia, motivación y pasos progresivos** se puede lograr cualquier cosa.
 
 ## Resumen en 3 líneas

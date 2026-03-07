@@ -1,6 +1,5 @@
 import streamlit as st
-
-from styles import MODERN_CSS
+from config import STYLE
 from tracker import log_visit, log_question, get_stats
 from src.embeddings import generate_embeddings
 from src.retriever import retrieve
@@ -14,10 +13,8 @@ EXAMPLE_QUESTIONS = [
     "¿Cuál es tu experiencia con Python?",
     "¿Qué proyectos de IA has desarrollado?",
     "¿Cómo trabajas en equipo?",
-    "¿Cuáles son tus expectativas salariales?",
     "¿Tienes experiencia con arquitecturas cloud?",
     "¿Qué stack tecnológico dominas?",
-    "¿Cuándo podrías incorporarte?",
     "¿Prefieres trabajo remoto o presencial?"
 ]
 
@@ -33,7 +30,7 @@ st.set_page_config(
 )
 
 # Inject CSS
-st.markdown(MODERN_CSS, unsafe_allow_html=True)
+st.markdown(STYLE, unsafe_allow_html=True)
 
 
 # ── Google Analytics ──────────────────────────
@@ -101,11 +98,11 @@ if mode == "Chat":
     st.markdown("""
     <div class="hero-wrap">
         <!-- <div class="hero-prompt">// init_session.py → conectando...</div> -->
-        <div class="hero-name">¡Bienvendo! Soy Enrique</div>
+        <div class="hero-name">¡Bienvenido! Soy Enrique</div>
         <p class="hero-bio">
             Ingeniero informático especializado en <span>Data Science</span> e Inteligencia Artificial.<br>
-            Aquí puedes explorar mi experiencia profesional, consultar mi stack de tecnologías y entender cómo puedo aportar valor a tu equipo.<br>
-            Siéntete libre de profundizar en mis proyectos o ponerme a prueba con preguntas técnicas de entrevista. ¿Por dónde te gustaría empezar?
+            Aquí podrás conocer a fondo mi experiencia y las herramientas que domino<br>
+            Siéntete libre de navegar por mi portfolio o hacerme las preguntas que quieras. ¿Por dónde te gustaría empezar?
         </p>
         <div class="hero-tags">
             <span class="tag">Python</span>

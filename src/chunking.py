@@ -72,29 +72,22 @@ def load_and_chunk_documents():
     Si knowledge.md no existe, se omite sin error.
     """
     chunks = []
+    files = ["data/cv.md", "data/knowledge.md", "data/projects.md"]
 
-    # ── CV ────────────────────────────────────────────────────────────────
-    with open("data/cv.md", "r", encoding="utf-8") as f:
-        cv_text = f.read()
+    for file in files:
+        try:
+            with open(file, "r", encoding="utf-8") as f:
+                text = f.read()
+            for chunk in chunk_text(text):
+                source = "CV" if file == "data/cv.md" else ("Personal Info" if file == "data/knowledge.md" else "Projects")
+                chunks.append({
+                    "text": chunk["text"],
+                    "metadata": {**chunk["metadata"], "source": source}
+                })
+        except FileNotFoundError:
+            print(f"⚠️  {file} no encontrado. Se omite en la indexación.")
 
-    for chunk in chunk_text(cv_text):
-        chunks.append({
-            "text": chunk["text"],
-            "metadata": {**chunk["metadata"], "source": "CV"}
-        })
-
-    # ── knowledge.md ──────────────────────────────────────────────────────
-    try:
-        with open("data/knowledge.md", "r", encoding="utf-8") as f:
-            knowledge_text = f.read()
-
-        for chunk in chunk_text(knowledge_text):
-            chunks.append({
-                "text": chunk["text"],
-                "metadata": {**chunk["metadata"], "source": "Personal Info"}
-            })
-
-    except FileNotFoundError:
-        print("⚠️  data/knowledge.md no encontrado. Se omite en la indexación.")
+        except Exception as e:
+            print(f"❌ Error al procesar {file}: {e}")
 
     return chunks

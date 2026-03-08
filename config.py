@@ -92,7 +92,7 @@ h1, h2, h3 { color: #f0f2f8 !important; letter-spacing: -0.02em !important; }
     color: #8b93a7;
     font-size: 0.88rem;
     line-height: 1.65;
-    max-width: 540px;
+    max-width: 860px;
     margin-bottom: 1.2rem;
 }
 

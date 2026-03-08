@@ -73,10 +73,6 @@ if "question_count" not in st.session_state:
 if "update_history" not in st.session_state:
     st.session_state.update_history = []
 
-# En modo admin, registro de preguntas para el "Ya has hecho X preguntas"
-if "show_final" not in st.session_state:
-    st.session_state.show_final = False
-
 
 # ────────────────────────────────────────────────
 #  Sidebar
@@ -101,7 +97,7 @@ if mode == "Chat":
         <div class="hero-name">¡Bienvenido! Soy Enrique</div>
         <p class="hero-bio">
             Ingeniero informático especializado en <span>Data Science</span> e Inteligencia Artificial.<br>
-            Aquí podrás conocer a fondo mi experiencia y las herramientas que domino<br>
+            Aquí podrás conocer a fondo mi experiencia y las herramientas que domino.<br>
             Siéntete libre de navegar por mi portfolio o hacerme las preguntas que quieras. ¿Por dónde te gustaría empezar?
         </p>
         <div class="hero-tags">

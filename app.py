@@ -14,7 +14,7 @@ EXAMPLE_QUESTIONS = [
     "¿Qué proyectos de IA has desarrollado?",
     "¿Cómo trabajas en equipo?",
     "¿Tienes experiencia con arquitecturas cloud?",
-    "¿Qué stack tecnológico dominas?",
+    "Cuéntame sobre tu último proyecto",
     "¿Prefieres trabajo remoto o presencial?"
 ]
 

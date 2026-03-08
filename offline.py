@@ -6,7 +6,7 @@ def index_documents():
 
     clear_documents()  # Limpiar vector store antes de indexar
 
-    # Carga tanto el CV como la infortmación personal
+    # Carga los datos de la carpeta data, los chunkea y obtiene sus metadatos
     chunks = load_and_chunk_documents()
 
     texts = [chunk['text'] for chunk in chunks]

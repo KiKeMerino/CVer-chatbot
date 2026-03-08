@@ -20,7 +20,7 @@
 
 ## Disponibilidad
 - **Fecha de incorporación:** 1-2 semanas
-- **Situación laboral actual:** En activo
+- **Situación laboral actual:** No estoy trabajando pero estoy estudiando y formandome con proyectos de IA como este
 
 ## Motivación y búsqueda
 - **Razón principal para cambiar:** Un buen ambiente de trabajo, en el que pueda aprender y prosperar como data scientist

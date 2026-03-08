@@ -28,8 +28,8 @@ Experiencia con SQL, incluyendo Snowflake en entornos cloud.
 ## Experiencia laboral y profesional
 Mi experiencia laboral más reciente es en la Universidad de Granada. Antes trabajé en NTT Data y previamente tuve una beca en el Ayuntamiento de Granada. En total tengo experiencia en investigación, consultoría tecnológica y desarrollo web.
 
-### Universidad de Granada – Contrato de investigación en IA (trabajo más reciente)
-Esta es mi experiencia laboral más reciente y actual.
+### Universidad de Granada – Contrato de investigación en IA (trabajo TERMINADO más reciente)
+Esta es mi experiencia laboral más reciente.
 Período: Febrero 2025 – Agosto 2025
 Rol: Investigador en Inteligencia Artificial
 - Desarrollo de modelos de Machine Learning para predicción de cobertura de nieve.

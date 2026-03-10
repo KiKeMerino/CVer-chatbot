@@ -164,7 +164,7 @@ if mode == "Chat":
             with st.spinner(""):
                 query_embedding = generate_embeddings([question])[0]
                 context_chunks, _ = retrieve(query_embedding)
-                prompt = build_prompt(context_chunks, question)
+                prompt = build_prompt(context_chunks, question, st.session_state.messages)
                 messages = [
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": prompt}
